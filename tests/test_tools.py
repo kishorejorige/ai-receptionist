@@ -1,14 +1,22 @@
 from datetime import date, timedelta
+from unittest.mock import Mock
 
 import pytest
 
-from app import db
+from app import db, tools
 from app.config import load_clinic
 from app.tools import make_tools
 
 
 @pytest.fixture
-def clinic_tools(tmp_path, monkeypatch):
+def alert_sender(monkeypatch):
+    sender = Mock()
+    monkeypatch.setattr(tools, "send_owner_booking_alert", sender)
+    return sender
+
+
+@pytest.fixture
+def clinic_tools(tmp_path, monkeypatch, alert_sender):
     monkeypatch.setattr(db, "DB_PATH", tmp_path / "receptionist.db")
     db.init_db()
     clinic = load_clinic("demo_clinic")
@@ -32,7 +40,7 @@ def test_check_availability_rejects_invalid_and_past_dates(clinic_tools):
     assert "past" in check_availability("2000-01-01")["error"]
 
 
-def test_booking_and_availability(clinic_tools):
+def test_booking_and_availability(clinic_tools, alert_sender):
     check_availability, book_appointment, _ = clinic_tools
     day = next_monday().isoformat()
 
@@ -54,11 +62,38 @@ def test_booking_and_availability(clinic_tools):
         "slot": "10:00",
         "treatment": "Consultation",
     }
+    alert_sender.assert_called_once_with(
+        "Smile Dental Clinic",
+        "Alex Patient",
+        "12345678901",
+        "Consultation",
+        day,
+        "10:00",
+    )
     assert "10:00" not in check_availability(day)["free_slots"]
     duplicate = book_appointment(
         "Another Patient", "+1 (234) 567-8902", "Consultation", day, "10:00"
     )
     assert "error" in duplicate
+    alert_sender.assert_called_once()
+
+
+def test_booking_reports_alert_failure_without_undoing_booking(
+    clinic_tools, alert_sender
+):
+    _, book_appointment, _ = clinic_tools
+    alert_sender.side_effect = OSError("SMTP unavailable")
+
+    result = book_appointment(
+        "Alex Patient",
+        "1234567890",
+        "Consultation",
+        next_monday().isoformat(),
+        "10:00",
+    )
+
+    assert result["status"] == "booked"
+    assert "notification email could not be sent" in result["alert_warning"]
 
 
 def test_appointment_only_sunday_has_no_slots_and_lists_phone_numbers(clinic_tools):

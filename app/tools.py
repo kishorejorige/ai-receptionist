@@ -1,10 +1,14 @@
 import datetime as dt
+import logging
+import smtplib
 import sqlite3
 from zoneinfo import ZoneInfo
 
 from app import db
+from app.notifications import send_owner_booking_alert
 
 DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+logger = logging.getLogger("receptionist")
 
 
 def _all_slots(clinic: dict, d: dt.date) -> list[str]:
@@ -121,12 +125,28 @@ def make_tools(clinic_id: str, clinic: dict):
             )
         except sqlite3.IntegrityError:
             return {"error": "That slot was just taken.", "free_slots": _free_slots(d)}
-        return {
+        result = {
             "status": "booked",
             "day": day,
             "slot": slot,
             "treatment": names[treatment.lower()],
         }
+        try:
+            send_owner_booking_alert(
+                clinic["name"],
+                patient_name.strip(),
+                digits,
+                names[treatment.lower()],
+                day,
+                slot,
+            )
+        except (OSError, RuntimeError, ValueError, smtplib.SMTPException) as e:
+            logger.error("Owner booking alert failed (%s)", type(e).__name__)
+            result["alert_warning"] = (
+                "The appointment is booked, but the clinic notification email "
+                "could not be sent."
+            )
+        return result
 
     def save_lead(phone: str, request: str, name: str = "") -> dict:
         """Save contact details when the patient needs a callback or asks

@@ -25,7 +25,15 @@ Copy-Item .env.example .env
 ```
 
 Edit `.env` and set `GEMINI_API_KEY`. `GEMINI_MODEL` is optional and defaults
-to `gemini-2.5-flash`. `OWNER_EMAIL` is currently an unused placeholder.
+to `gemini-3.8-flash`.
+
+To receive an email for each successful appointment booking, configure
+`OWNER_EMAIL`, `SMTP_HOST`, and `SMTP_FROM`. `SMTP_PORT` defaults to `587`,
+and `SMTP_SECURITY` defaults to `starttls` (`ssl` and `none` are also
+supported). Set both `SMTP_USERNAME` and `SMTP_PASSWORD` when authentication
+is required. Keep all credentials in `.env`, never in source control. A failed
+alert does not undo a saved booking; the assistant reports that the booking
+succeeded but the notification could not be sent.
 
 Keep `.env` private. Do not commit API keys or put real credentials in
 `.env.example`. If a key has been exposed, revoke it and create a replacement.
