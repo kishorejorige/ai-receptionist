@@ -2,12 +2,21 @@ name: Smile Dental Clinic
 location: Madhapur, Hyderabad
 timezone: Asia/Kolkata
 currency: INR
-open_time: "09:00"
-close_time: "19:00"
-closed_days: [sun]
+address: Madhapur, Hyderabad
+doctors:
+  - "Dr. Mohd. Shafiq, Dental Surgeon (BDS)"
+  - "Dr. Rafeeq Mujtaba, Oral Health Educator"
+sessions:
+  - start: "10:00"
+    end: "14:00"
+  - start: "17:00"
+    end: "21:00"
+closed_days: []
+appointment_only_days: [sun]
+phones: ["9000000001", "9000000002"]
 slot_minutes: 30
-hours_text: "Mon-Sat 9:00 AM - 7:00 PM, Sunday closed"
-emergency_note: "For severe pain, bleeding or swelling, please call the clinic directly or go to the nearest emergency room."
+hours_text: "Mon-Sat: 10:00 AM-2:00 PM and 5:00 PM-9:00 PM. Sunday: appointment-only; call 9000000001 or 9000000002."
+emergency_note: "For severe pain, bleeding or swelling, please call 9000000001 or 9000000002. For emergencies, go to the nearest emergency room."
 services:
   - name: Consultation
     price: 300

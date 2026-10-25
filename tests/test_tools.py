@@ -20,6 +20,11 @@ def next_monday():
     return date.today() + timedelta(days=days_until_monday)
 
 
+def next_sunday():
+    days_until_sunday = (6 - date.today().weekday()) % 7 or 7
+    return date.today() + timedelta(days=days_until_sunday)
+
+
 def test_check_availability_rejects_invalid_and_past_dates(clinic_tools):
     check_availability = clinic_tools[0]
 
@@ -33,18 +38,52 @@ def test_booking_and_availability(clinic_tools):
 
     available = check_availability(day)["free_slots"]
     assert available
-    assert "09:00" in available
+    assert "10:00" in available
+    assert "14:00" not in available
+    assert "16:30" not in available
+    assert "17:00" in available
+    assert "20:30" in available
+    assert "21:00" not in available
 
     booked = book_appointment(
-        "Alex Patient", "+1 (234) 567-8901", "Consultation", day, "09:00"
+        "Alex Patient", "+1 (234) 567-8901", "Consultation", day, "10:00"
     )
     assert booked == {
         "status": "booked",
         "day": day,
-        "slot": "09:00",
+        "slot": "10:00",
         "treatment": "Consultation",
     }
-    assert "09:00" not in check_availability(day)["free_slots"]
+    assert "10:00" not in check_availability(day)["free_slots"]
+    duplicate = book_appointment(
+        "Another Patient", "+1 (234) 567-8902", "Consultation", day, "10:00"
+    )
+    assert "error" in duplicate
+
+
+def test_appointment_only_sunday_has_no_slots_and_lists_phone_numbers(clinic_tools):
+    check_availability, _, _ = clinic_tools
+
+    result = check_availability(next_sunday().isoformat())
+
+    assert result["free_slots"] == []
+    assert "appointment-only" in result["note"].lower()
+    assert "9000000001" in result["note"]
+    assert "9000000002" in result["note"]
+
+
+def test_booking_on_appointment_only_sunday_is_refused(clinic_tools):
+    _, book_appointment, _ = clinic_tools
+
+    result = book_appointment(
+        "Alex Patient",
+        "+1 (234) 567-8901",
+        "Consultation",
+        next_sunday().isoformat(),
+        "10:00",
+    )
+
+    assert "error" in result
 
 
 @pytest.mark.parametrize(
@@ -54,6 +93,7 @@ def test_booking_and_availability(clinic_tools):
         ("Alex", "123", "Consultation", "09:00", "valid name and phone"),
         ("Alex", "1234567890", "Unknown", "09:00", "Unknown treatment"),
         ("Alex", "1234567890", "Consultation", "08:00", "not available"),
+        ("Alex", "1234567890", "Consultation", "16:30", "not available"),
     ],
 )
 def test_booking_rejects_invalid_details(

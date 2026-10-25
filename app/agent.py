@@ -27,16 +27,25 @@ def _get_client():
 def build_system_prompt(clinic: dict) -> str:
     tz = ZoneInfo(clinic.get("timezone", "Asia/Kolkata"))
     now = dt.datetime.now(tz)
+    doctors = clinic.get("doctors", [])
     services = "\n".join(
         f"- {s['name']}: {clinic['currency']} {s['price']}" for s in clinic["services"]
     )
     faqs = "\n".join(f"Q: {f['q']}\nA: {f['a']}" for f in clinic.get("faqs", []))
+    doctor_lines = "\n".join(f"- {doctor}" for doctor in doctors)
+    doctor_section = (
+        f"Doctors:\n{doctor_lines}\n"
+        if doctors
+        else ""
+    )
     return f"""You are the virtual receptionist for {clinic["name"]} ({clinic["location"]}).
 Today is {now.strftime("%A, %Y-%m-%d")} and the time is {now.strftime("%H:%M")} ({clinic.get("timezone")}).
 
 CLINIC INFORMATION (your only source of facts):
+Address: {clinic.get("address", clinic["location"])}
+Phones: {", ".join(clinic.get("phones", []))}
 Hours: {clinic["hours_text"]}
-Services and prices:
+{doctor_section}Services and prices:
 {services}
 FAQs:
 {faqs}

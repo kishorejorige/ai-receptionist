@@ -8,15 +8,20 @@ DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
 def _all_slots(clinic: dict, d: dt.date) -> list[str]:
-    if DAYS[d.weekday()] in clinic.get("closed_days", []):
+    day = DAYS[d.weekday()]
+    if (
+        day in clinic.get("closed_days", [])
+        or day in clinic.get("appointment_only_days", [])
+    ):
         return []
-    open_t = dt.datetime.strptime(clinic["open_time"], "%H:%M")
-    close_t = dt.datetime.strptime(clinic["close_time"], "%H:%M")
     step = dt.timedelta(minutes=clinic["slot_minutes"])
-    slots, cur = [], open_t
-    while cur + step <= close_t:
-        slots.append(cur.strftime("%H:%M"))
-        cur += step
+    slots = []
+    for session in clinic["sessions"]:
+        cur = dt.datetime.strptime(session["start"], "%H:%M")
+        close_t = dt.datetime.strptime(session["end"], "%H:%M")
+        while cur + step <= close_t:
+            slots.append(cur.strftime("%H:%M"))
+            cur += step
     return slots
 
 
@@ -55,6 +60,13 @@ def make_tools(clinic_id: str, clinic: dict):
         d, err = _parse_day(day)
         if err:
             return {"error": err}
+        if DAYS[d.weekday()] in clinic.get("appointment_only_days", []):
+            phones = ", ".join(clinic.get("phones", []))
+            return {
+                "day": day,
+                "free_slots": [],
+                "note": f"Appointment-only day. Please call the clinic at {phones}.",
+            }
         free = _free_slots(d)
         if not free:
             return {
