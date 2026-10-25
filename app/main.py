@@ -1,9 +1,11 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import httpx
 import ollama
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from google.genai import errors as genai_errors
 from pydantic import BaseModel, Field
 
@@ -13,6 +15,7 @@ from app.db import init_db
 
 logger = logging.getLogger("receptionist")
 sessions: dict[tuple[str, str, str, str], object] = {}
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 
 def main() -> None:
@@ -28,6 +31,11 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="AI Receptionist", lifespan=lifespan)
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 class ChatRequest(BaseModel):

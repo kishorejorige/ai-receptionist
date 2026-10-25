@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clinic Assistant</title>
+<style>
+  :root { --bg:#f4f6f8; --card:#fff; --me:#0b7285; --bot:#e9ecef; --text:#1c1f23; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14181c; --card:#1d2328; --bot:#2a3138; --text:#e8eaed; }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text);
+         display: flex; flex-direction: column; }
+  header { padding: 14px 16px; background: var(--me); color: #fff; font-weight: 600; }
+  #log { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 85%; padding: 10px 12px; border-radius: 14px; white-space: pre-wrap; line-height: 1.4; }
+  .bot { background: var(--bot); align-self: flex-start; }
+  .me { background: var(--me); color: #fff; align-self: flex-end; }
+  form { display: flex; gap: 8px; padding: 10px; background: var(--card); }
+  input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #8884;
+          font-size: 16px; background: transparent; color: inherit; }
+  button { padding: 0 18px; border: 0; border-radius: 10px; background: var(--me);
+           color: #fff; font-size: 16px; }
+  button:disabled { opacity: .5; }
+</style>
+</head>
+<body>
+<header>Dental Clinic Assistant</header>
+<div id="log"></div>
+<form id="form">
+  <input id="text" autocomplete="off" placeholder="Type your message..." maxlength="1000" required>
+  <button id="send">Send</button>
+</form>
+<script>
+  const clinic = new URLSearchParams(location.search).get("clinic") || "demo_clinic";
+  let sid = sessionStorage.getItem("sid");
+  if (!sid) {
+    sid = Math.random().toString(36).slice(2, 12);
+    sessionStorage.setItem("sid", sid);
+  }
+  const log = document.getElementById("log");
+  const form = document.getElementById("form");
+  const input = document.getElementById("text");
+  const btn = document.getElementById("send");
+
+  function add(text, cls) {
+    const d = document.createElement("div");
+    d.className = "msg " + cls;
+    d.textContent = text;
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+    return d;
+  }
+
+  add("Hello! How can I help you today?", "bot");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = "";
+    add(msg, "me");
+    btn.disabled = true;
+    const pending = add("...", "bot");
+    try {
+      const r = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clinic_id: clinic, session_id: sid, message: msg }),
+      });
+      const data = await r.json();
+      pending.textContent = r.ok ? data.reply : (data.detail || "Something went wrong.");
+    } catch {
+      pending.textContent = "Could not reach the server.";
+    }
+    btn.disabled = false;
+    input.focus();
+    log.scrollTop = log.scrollHeight;
+  });
+</script>
+</body>
+</html>

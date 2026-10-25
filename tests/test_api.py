@@ -25,6 +25,14 @@ def test_health_check(client):
     assert response.json() == {"status": "healthy"}
 
 
+def test_home_serves_chat_page(client):
+    response = client.get("/?clinic=demo_clinic")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "Dental Clinic Assistant" in response.text
+
+
 @pytest.mark.parametrize(
     "payload",
     [
