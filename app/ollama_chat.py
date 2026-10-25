@@ -12,8 +12,12 @@ class Reply:
 
 
 def _clean(text: str) -> str:
-    # remove any <think>...</think> block Qwen3 may add
-    return re.sub(r"<think>.*?</think>", "", text or "", flags=re.DOTALL).strip()
+    text = text or ""
+    # Qwen3 may print reasoning, then </think>, with no opening tag
+    if "</think>" in text:
+        text = text.split("</think>")[-1]
+    text = re.sub(r"<think>.*?(</think>|$)", "", text, flags=re.DOTALL)
+    return text.strip()
 
 
 class OllamaChat:
@@ -37,9 +41,11 @@ class OllamaChat:
                 options={"temperature": 0.3, "num_ctx": 8192},
             )
             msg = resp.message
-            self.messages.append(msg)
             if not msg.tool_calls:
-                return Reply(_clean(msg.content))
+                text = _clean(msg.content)
+                self.messages.append({"role": "assistant", "content": text})
+                return Reply(text)
+            self.messages.append(msg)
             for call in msg.tool_calls:
                 fn = self.tools.get(call.function.name)
                 try:

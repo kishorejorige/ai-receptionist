@@ -25,7 +25,9 @@ def test_ollama_chat_runs_tool_call_and_returns_final_text(monkeypatch):
     )
     final_response = SimpleNamespace(
         message=SimpleNamespace(
-            role="assistant", content="2:00 PM is available.", tool_calls=[]
+            role="assistant",
+            content="Reasoning that must not be saved.</think>\n2:00 PM is available.",
+            tool_calls=[],
         )
     )
     client = Mock()
@@ -45,6 +47,10 @@ def test_ollama_chat_runs_tool_call_and_returns_final_text(monkeypatch):
         "tool_name": "check_availability",
         "content": json.dumps({"day": "2026-10-26", "free_slots": ["14:00"]}),
     }
+    assert sent_messages[-1] == {
+        "role": "assistant",
+        "content": "2:00 PM is available.",
+    }
 
 
 def test_create_chat_uses_configured_ollama_provider(monkeypatch):
@@ -61,4 +67,4 @@ def test_create_chat_uses_configured_ollama_provider(monkeypatch):
     result = agent.create_chat("demo_clinic", {})
 
     assert result is ollama_chat.return_value
-    ollama_chat.assert_called_once_with("prompt", [])
+    ollama_chat.assert_called_once_with("prompt\n/no_think", [])

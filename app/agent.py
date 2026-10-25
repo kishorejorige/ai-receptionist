@@ -66,7 +66,8 @@ def create_chat(clinic_id: str, clinic: dict):
 
         logger.info("Creating chat with provider=%s model=%s", provider, model)
         return OllamaChat(
-            build_system_prompt(clinic), make_tools(clinic_id, clinic)
+            build_system_prompt(clinic) + "\n/no_think",
+            make_tools(clinic_id, clinic),
         )
     logger.info("Creating chat with provider=gemini model=%s", model)
     config = types.GenerateContentConfig(
