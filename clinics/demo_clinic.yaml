@@ -1,9 +1,13 @@
 name: Smile Dental Clinic
 location: Madhapur, Hyderabad
-hours:
-  mon-sat: "9:00 AM - 7:00 PM"
-  sun: "Closed"
+timezone: Asia/Kolkata
+currency: INR
+open_time: "09:00"
+close_time: "19:00"
+closed_days: [sun]
 slot_minutes: 30
+hours_text: "Mon-Sat 9:00 AM - 7:00 PM, Sunday closed"
+emergency_note: "For severe pain, bleeding or swelling, please call the clinic directly or go to the nearest emergency room."
 services:
   - name: Consultation
     price: 300

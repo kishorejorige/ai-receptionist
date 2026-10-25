@@ -1,8 +1,10 @@
 import re
 from pathlib import Path
+
 import yaml
 
 CLINICS_DIR = Path(__file__).resolve().parent.parent / "clinics"
+
 
 def load_clinic(clinic_id: str) -> dict:
     # only simple names allowed, so nobody can read other files
