@@ -1,0 +1,16 @@
+name: Smile Dental Clinic
+location: Madhapur, Hyderabad
+hours:
+  mon-sat: "9:00 AM - 7:00 PM"
+  sun: "Closed"
+slot_minutes: 30
+services:
+  - name: Consultation
+    price: 300
+  - name: Teeth Cleaning
+    price: 800
+  - name: Root Canal
+    price: 5000
+faqs:
+  - q: Do you accept walk-ins?
+    a: Yes, but booking ahead avoids waiting.
