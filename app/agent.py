@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 import os
 from zoneinfo import ZoneInfo
 
@@ -8,6 +9,7 @@ from google.genai import types
 
 from app.tools import make_tools
 
+logger = logging.getLogger("receptionist")
 _client = None
 
 
@@ -49,12 +51,27 @@ RULES:
 - Reply in the patient's language when it is English, Telugu, or Hindi."""
 
 
+def get_chat_provider_model() -> tuple[str, str]:
+    load_dotenv()
+    provider = os.getenv("LLM_PROVIDER", "gemini").lower()
+    if provider == "ollama":
+        return provider, os.getenv("OLLAMA_MODEL", "qwen3:4b")
+    return "gemini", os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+
+
 def create_chat(clinic_id: str, clinic: dict):
+    provider, model = get_chat_provider_model()
+    if provider == "ollama":
+        from app.ollama_chat import OllamaChat
+
+        logger.info("Creating chat with provider=%s model=%s", provider, model)
+        return OllamaChat(
+            build_system_prompt(clinic), make_tools(clinic_id, clinic)
+        )
+    logger.info("Creating chat with provider=gemini model=%s", model)
     config = types.GenerateContentConfig(
         system_instruction=build_system_prompt(clinic),
         tools=make_tools(clinic_id, clinic),
         temperature=0.3,
     )
-    return _get_client().chats.create(
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"), config=config
-    )
+    return _get_client().chats.create(model=model, config=config)
