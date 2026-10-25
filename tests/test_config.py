@@ -25,11 +25,12 @@ def test_system_prompt_includes_address_phones_and_optional_doctors():
     prompt = build_system_prompt(clinic)
     assert f"Address: {clinic['address']}" in prompt
     assert "9000000001, 9000000002" in prompt
-    assert "Doctors:" not in prompt
+    assert "Doctors:\n- Dr. Mohd. Shafiq, Dental Surgeon (BDS)" in prompt
+    assert "Dr. Rafeeq Mujtaba, Oral Health Educator" in prompt
 
-    clinic["doctors"] = ["Dr. Placeholder"]
-    prompt_with_doctors = build_system_prompt(clinic)
-    assert "Doctors:\n- Dr. Placeholder" in prompt_with_doctors
+    clinic_without_doctors = {key: value for key, value in clinic.items() if key != "doctors"}
+    prompt_without_doctors = build_system_prompt(clinic_without_doctors)
+    assert "Doctors:" not in prompt_without_doctors
 
 
 @pytest.mark.parametrize("clinic_id", ["../secret", "clinic.yaml", "UpperCase"])
